@@ -1,17 +1,21 @@
-﻿using System.Diagnostics;
+﻿using Microsoft.Data.Sqlite;
+using System.Diagnostics;
 using System.IO;
 
-if (args.Length < 3 || string.IsNullOrEmpty(args[0]) || string.IsNullOrEmpty(args[1]) || string.IsNullOrEmpty(args[2])) {
-    Console.WriteLine("Arguments Expected: 3");
+if (args.Length < 2 || string.IsNullOrEmpty(args[0]) || string.IsNullOrEmpty(args[1])) {
+    Console.WriteLine("Arguments Expected: 2");
     Console.WriteLine("  1: Edge profile email address");
-    Console.WriteLine("  2: Path to sqlite3.exe");
-    Console.WriteLine("  3: Path to SQL file to execute");
+    Console.WriteLine("  2: Path to SQL file to execute");
     return;
 }
 
 var emailAddress = args[0];
-var sqlitePath = args[1];
-var sqlFile = args[2];
+var sqlFile = args[1];
+
+if (!File.Exists(sqlFile)) {
+    Console.WriteLine("SQL file could not be found");
+    return;
+}
 
 var edgeUserData = Path.Combine(
     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -31,7 +35,14 @@ foreach (var profile in profiles) {
 
     if (profileData.Contains(emailAddress)) {
         var database = Path.Combine(Path.GetDirectoryName(profile)!, "Web Data");
-        var sqlite = Process.Start(sqlitePath, new string[] { database, $@".read '{sqlFile}'" });
-        sqlite.WaitForExit();
+
+        using (var conn = new SqliteConnection($"Data Source={database}")) {
+            conn.Open();
+
+            var sql = conn.CreateCommand();
+            sql.CommandText = File.ReadAllText(sqlFile);
+
+            sql.ExecuteNonQuery();
+        }
     }
 }
