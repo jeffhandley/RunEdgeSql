@@ -24,8 +24,8 @@ var edgeUserData = Path.Combine(
     "User Data"
 );
 
-// Kill all Edge processes
-foreach (var edge in Process.GetProcessesByName("msedge")) edge.Kill();
+// Kill all Edge processes for the current user
+foreach (var edge in Process.GetProcessesByName("msedge").Where(p => p.StartInfo.UserName == Environment.UserName)) edge.Kill();
 
 // Find the matching profile
 var profiles = Directory.GetFiles(edgeUserData, "Preferences", new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 1 });
